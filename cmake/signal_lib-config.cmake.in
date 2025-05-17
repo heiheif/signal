@@ -1,0 +1,4 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/signal_lib-targets.cmake")
+check_required_components(signal_lib) 
