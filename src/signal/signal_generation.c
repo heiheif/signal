@@ -33,22 +33,46 @@ int spectrum_analysis(const Signal* sig, Complex* spectrum, size_t* spec_length)
         return -1;
     }
 
+    // 检查信号长度是否合理
+    if (sig->length > MAX_SIGNAL_LENGTH) {
+        return -1;
+    }
+
     // 计算FFT长度
     size_t fft_length = 1;
     while (fft_length < sig->length) {
         fft_length <<= 1;
+        // 防止溢出
+        if (fft_length > MAX_SIGNAL_LENGTH) {
+            return -1;
+        }
     }
     *spec_length = fft_length;
 
-    // 将信号数据复制到频谱数组
+    // 应用汉宁窗并复制数据
+    double* windowed_data = (double*)malloc(sig->length * sizeof(double));
+    if (!windowed_data) {
+        return -1;
+    }
+
+    // 应用汉宁窗
     for (size_t i = 0; i < sig->length; i++) {
-        spectrum[i].real = sig->data[i];
+        double window = 0.5 * (1.0 - cos(2.0 * PI * i / (sig->length - 1)));
+        windowed_data[i] = sig->data[i] * window;
+    }
+
+    // 将加窗后的数据复制到频谱数组
+    for (size_t i = 0; i < sig->length; i++) {
+        spectrum[i].real = windowed_data[i];
         spectrum[i].imag = 0.0;
     }
+    
     // 补零
     for (size_t i = sig->length; i < fft_length; i++) {
         spectrum[i].real = spectrum[i].imag = 0.0;
     }
+
+    free(windowed_data);
 
     // 执行FFT
     fft_recursive(spectrum, fft_length, 1);
