@@ -1,94 +1,86 @@
 cmake_minimum_required(VERSION 3.10)
-project(signal_processing VERSION 1.0.0 LANGUAGES C)
+project(SignalLibTest)
 
-# 设置C标准
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+# 设置C++标准
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 添加编译选项
 if(MSVC)
     add_compile_options(/utf-8 /wd4819)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    # 添加标准库搜索路径
-    include_directories("$ENV{VSINSTALLDIR}/VC/Tools/MSVC/$ENV{VCToolsVersion}/include")
-    include_directories("$ENV{WindowsSdkDir}/Include/$ENV{WindowsSDKVersion}/ucrt")
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    # 启用多线程编译
+    add_compile_options(/MP)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MD")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MDd")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
 endif()
-
-# 添加头文件目录
-include_directories(${CMAKE_SOURCE_DIR}/src/include)
-
-# 收集源文件
-file(GLOB_RECURSE SOURCES 
-    "src/utils/*.c"
-    "src/signal/*.c"
-    "src/acoustic/*.c"
-    "src/processing/*.c"
-)
-
-# 创建静态库
-add_library(signal_lib STATIC ${SOURCES})
 
 # 设置输出目录
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# 添加头文件目录
+include_directories(../src/include)
+include_directories(../3party)
+include_directories(3party/gtest-1.8.0/googletest/include)
+include_directories(3party/gtest-1.8.0/googlemock/include)
+
+# 查找gtest库
+set(GTEST_LIBRARY ${CMAKE_SOURCE_DIR}/3party/gtest-1.8.0/build64/googlemock/gtest/Release/gtest.lib)
+set(GTEST_MAIN_LIBRARY ${CMAKE_SOURCE_DIR}/3party/gtest-1.8.0/build64/googlemock/gtest/Release/gtest_main.lib)
+set(GMOCK_LIBRARY ${CMAKE_SOURCE_DIR}/3party/gtest-1.8.0/build64/googlemock/Release/gmock.lib)
+set(GMOCK_MAIN_LIBRARY ${CMAKE_SOURCE_DIR}/3party/gtest-1.8.0/build64/googlemock/Release/gmock_main.lib)
+
+# 检查是否找到所有库
+foreach(lib ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} ${GMOCK_LIBRARY} ${GMOCK_MAIN_LIBRARY})
+    if(NOT EXISTS ${lib})
+        message(FATAL_ERROR "Not found: ${lib}")
+    endif()
+endforeach()
+
+message(STATUS "Found gtest: ${GTEST_LIBRARY}")
+message(STATUS "Found gtest_main: ${GTEST_MAIN_LIBRARY}")
+message(STATUS "Found gmock: ${GMOCK_LIBRARY}")
+message(STATUS "Found gmock_main: ${GMOCK_MAIN_LIBRARY}")
+
+# 添加信号处理库（动态库）
+file(GLOB_RECURSE SIGNAL_LIB_SOURCES "src/*.cpp")
+message(STATUS "Found source files: ${SIGNAL_LIB_SOURCES}")
+add_library(signal_lib SHARED ${SIGNAL_LIB_SOURCES})
+target_include_directories(signal_lib PUBLIC src/include)
+target_compile_definitions(signal_lib PRIVATE SIGNAL_LIB_EXPORTS)
 set_target_properties(signal_lib PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
 
-# 链接数学库
-if(NOT MSVC)
-    target_link_libraries(signal_lib m)
-endif()
+# 创建测试可执行文件
+#add_executable(test_all_interfaces test_all_interfaces.cpp)
 
-# 设置头文件包含目录
-target_include_directories(signal_lib
-    PUBLIC 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
-        $<INSTALL_INTERFACE:include>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
+# 链接库
+# 先链接主库，再链接gtest/gmock
+# gtest/gmock是静态库，signal_lib是动态库
+# 这样test程序运行时依赖signal_lib.dll
+#
+# target_link_libraries(test_all_interfaces 
+#     signal_lib
+#     ${GTEST_LIBRARY}
+#     ${GTEST_MAIN_LIBRARY}
+#     ${GMOCK_LIBRARY}
+#     ${GMOCK_MAIN_LIBRARY}
+# )
 
-# 安装配置
-include(GNUInstallDirs)
-install(TARGETS signal_lib
-    EXPORT signal_lib-targets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+# # 启用测试
+# enable_testing()
 
-install(FILES src/include/signal_lib.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+# 添加测试
+#add_test(NAME AllInterfacesTest COMMAND test_all_interfaces)
 
-# 导出配置
-install(EXPORT signal_lib-targets
-    FILE signal_lib-targets.cmake
-    NAMESPACE signal_lib::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/signal_lib
-)
-
-# 创建配置文件
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    "signal_lib-config-version.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/signal_lib-config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/signal_lib-config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/signal_lib
-)
-
-# 安装配置文件
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/signal_lib-config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/signal_lib-config-version.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/signal_lib
-) 
+# 设置测试环境变量
+#set_tests_properties(AllInterfacesTest PROPERTIES
+#    ENVIRONMENT "PATH=${CMAKE_BINARY_DIR}/bin;$ENV{PATH}"
+#) 

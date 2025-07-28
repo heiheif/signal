@@ -1,7 +1,7 @@
- #include "../include/signal_lib.h"
+ #include "../include/signal_lib.hpp"
 
 // 被动声纳方程实现
-double calculate_passive_sonar(double sl, double tl, double nl, double di, double dt) {
+SIGNAL_LIB_API double calculate_passive_sonar(double sl, double tl, double nl, double di, double dt) {
     // SL - 声源级
     // TL - 传播损失
     // NL - 噪声级
@@ -14,7 +14,7 @@ double calculate_passive_sonar(double sl, double tl, double nl, double di, doubl
 }
 
 // 计算传播损失
-double calculate_transmission_loss(double distance, double alpha, double spreading_factor) {
+SIGNAL_LIB_API double calculate_transmission_loss(double distance, double alpha, double spreading_factor) {
     // distance - 传播距离(m)
     // alpha - 吸收系数(dB/km)
     // spreading_factor - 扩展因子(通常为10-20)
@@ -30,7 +30,7 @@ double calculate_transmission_loss(double distance, double alpha, double spreadi
 }
 
 // 计算海洋环境噪声级
-double calculate_ambient_noise(double wind_speed, double shipping_density, double freq) {
+SIGNAL_LIB_API double calculate_ambient_noise(double wind_speed, double shipping_density, double freq) {
     // wind_speed - 风速(m/s)
     // shipping_density - 船舶密度(0-1)
     // freq - 频率(Hz)
@@ -53,7 +53,7 @@ double calculate_ambient_noise(double wind_speed, double shipping_density, doubl
 }
 
 // 计算阵增益
-double calculate_array_gain(int array_elements, double element_spacing, 
+SIGNAL_LIB_API double calculate_array_gain(int array_elements, double element_spacing, 
                           double signal_direction, double freq) {
     // array_elements - 阵元数量
     // element_spacing - 阵元间距(m)
@@ -80,7 +80,7 @@ double calculate_array_gain(int array_elements, double element_spacing,
 }
 
 // 计算检测概率
-double calculate_detection_probability(double snr, double threshold, double time_bandwidth) {
+SIGNAL_LIB_API double calculate_detection_probability(double snr, double threshold, double time_bandwidth) {
     // snr - 信噪比(dB)
     // threshold - 检测阈值(dB)
     // time_bandwidth - 时间带宽积
@@ -100,7 +100,7 @@ double calculate_detection_probability(double snr, double threshold, double time
 }
 
 // 计算最大检测距离
-double calculate_max_detection_range(double sl, double nl, double di, double dt,
+SIGNAL_LIB_API double calculate_max_detection_range(double sl, double nl, double di, double dt,
                                    double alpha, double spreading_factor) {
     // 使用二分法求解最大检测距离
     double min_range = 1.0;      // 最小距离1m

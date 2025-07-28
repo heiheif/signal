@@ -1,7 +1,7 @@
-﻿#include "../include/signal_lib.h"
+﻿#include "../include/signal_lib.hpp"
 
 // 声线追踪计算函数
-int ray_direction_calc(const SoundProfile* profile, double source_depth,
+SIGNAL_LIB_API int ray_direction_calc(const SoundProfile* profile, double source_depth,
                       double* angles, size_t angle_count,
                       double** ray_paths, size_t* path_lengths) {
     if (!profile || !angles || !ray_paths || !path_lengths ||

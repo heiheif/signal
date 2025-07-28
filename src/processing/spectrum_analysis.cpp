@@ -1,4 +1,4 @@
-﻿#include "../include/signal_lib.h"
+﻿#include "../include/signal_lib.hpp"
 
 // 线谱分析函数实现
 int analyze_line_spectrum(const Signal* sig, double min_peak_height,
@@ -18,12 +18,17 @@ int analyze_line_spectrum(const Signal* sig, double min_peak_height,
         return -1;
     }
 
-    // 执行FFT
+    // 执行FFT (使用增强版本)
     for (size_t i = 0; i < sig->length; i++) {
         spectrum[i].real = sig->data[i];
         spectrum[i].imag = 0.0;
     }
-    fft_recursive(spectrum, fft_length, 1);
+    
+    // 优先使用增强FFT
+    if (enhanced_fft(spectrum, fft_length, 1) != 0) {
+        // 回退到原始实现
+        fft_recursive(spectrum, fft_length, 1);
+    }
 
     // 计算幅度谱
     double* magnitude = (double*)malloc(fft_length/2 * sizeof(double));
@@ -174,12 +179,17 @@ int adaptive_spectrum_detect(const Signal* sig, double false_alarm_rate,
         return -1;
     }
 
-    // 执行FFT
+    // 执行FFT (使用增强版本)
     for (size_t i = 0; i < sig->length; i++) {
         spectrum[i].real = sig->data[i];
         spectrum[i].imag = 0.0;
     }
-    fft_recursive(spectrum, fft_length, 1);
+    
+    // 优先使用增强FFT
+    if (enhanced_fft(spectrum, fft_length, 1) != 0) {
+        // 回退到原始实现
+        fft_recursive(spectrum, fft_length, 1);
+    }
 
     // 计算功率谱
     double* power_spectrum = (double*)malloc(fft_length/2 * sizeof(double));

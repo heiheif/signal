@@ -1,7 +1,7 @@
-#include "../include/signal_lib.h"
+#include "../include/signal_lib.hpp"
 
 // 基础信号生成函数实现
-Signal* generate_basic_signal(double freq, double fs, double duration) {
+SIGNAL_LIB_API Signal* generate_basic_signal(double freq, double fs, double duration) {
     if (freq <= 0 || fs <= 0 || duration <= 0) {
         return NULL;
     }
@@ -28,7 +28,7 @@ Signal* generate_basic_signal(double freq, double fs, double duration) {
 }
 
 // 频谱分析函数实现
-int spectrum_analysis(const Signal* sig, Complex* spectrum, size_t* spec_length) {
+SIGNAL_LIB_API int spectrum_analysis(const Signal* sig, Complex* spectrum, size_t* spec_length) {
     if (!sig || !spectrum || !spec_length || sig->length == 0) {
         return -1;
     }
@@ -74,14 +74,17 @@ int spectrum_analysis(const Signal* sig, Complex* spectrum, size_t* spec_length)
 
     free(windowed_data);
 
-    // 执行FFT
-    fft_recursive(spectrum, fft_length, 1);
+    // 执行FFT (使用增强版本)
+    if (enhanced_fft(spectrum, fft_length, 1) != 0) {
+        // 回退到原始实现
+        fft_recursive(spectrum, fft_length, 1);
+    }
 
     return 0;
 }
 
 // CW信号生成函数实现
-Signal* generate_cw(double freq, double fs, double duration, double amplitude, double phase) {
+SIGNAL_LIB_API Signal* generate_cw(double freq, double fs, double duration, double amplitude, double phase) {
     if (freq <= 0 || fs <= 0 || duration <= 0) {
         return NULL;
     }
@@ -108,7 +111,7 @@ Signal* generate_cw(double freq, double fs, double duration, double amplitude, d
 }
 
 // LFM信号生成函数实现
-Signal* generate_lfm(double f_start, double f_end, double fs, double duration) {
+SIGNAL_LIB_API Signal* generate_lfm(double f_start, double f_end, double fs, double duration) {
     if (f_start <= 0 || f_end <= 0 || fs <= 0 || duration <= 0) {
         return NULL;
     }
@@ -145,7 +148,7 @@ Signal* generate_lfm(double f_start, double f_end, double fs, double duration) {
 }
 
 // HFM信号生成函数实现
-Signal* generate_hfm(double f_start, double f_end, double fs, double duration) {
+SIGNAL_LIB_API Signal* generate_hfm(double f_start, double f_end, double fs, double duration) {
     if (f_start <= 0 || f_end <= 0 || fs <= 0 || duration <= 0) {
         return NULL;
     }
@@ -182,7 +185,7 @@ Signal* generate_hfm(double f_start, double f_end, double fs, double duration) {
 }
 
 // PSK信号生成函数实现
-Signal* generate_psk(double carrier_freq, double fs, int symbol_count, 
+SIGNAL_LIB_API Signal* generate_psk(double carrier_freq, double fs, int symbol_count, 
                     int samples_per_symbol, const int* symbols) {
     if (carrier_freq <= 0 || fs <= 0 || symbol_count <= 0 || 
         samples_per_symbol <= 0 || !symbols) {
@@ -257,4 +260,17 @@ Signal* generate_fsk(double* freqs, int freq_count, double fs,
     }
 
     return sig;
-} 
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+SIGNAL_LIB_API void generate_chirp_signal(double* signal, int length, double fs, double f0, double f1, double duration) {
+    // TODO: 实现啁啾信号生成，这里仅为占位
+    if (signal && length > 0) {
+        for (int i = 0; i < length; ++i) signal[i] = 0.0;
+    }
+}
+#ifdef __cplusplus
+}
+#endif 

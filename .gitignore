@@ -2,6 +2,9 @@
 build/
 out/
 bin/
+demo/
+3party/
+
 
 # Documentation
 doc/
@@ -20,6 +23,7 @@ doc/
 *.dll
 *.so
 *.dylib
+*.md
 
 # CMake generated files
 CMakeCache.txt

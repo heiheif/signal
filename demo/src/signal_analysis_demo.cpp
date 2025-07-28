@@ -28,24 +28,31 @@ void run_signal_analysis_demo() {
 
     // 2. 特征提取
     std::cout << "\n执行特征提取...\n";
-    double time_features[5];  // 时域特征
-    double freq_features[3];  // 频域特征
     
-    int feature_result = extract_features(test_signal, time_features, freq_features);
+    // 使用新的SignalFeatures结构体
+    SignalFeatures features;
+    
+    int feature_result = extract_features(test_signal, &features);
     if (feature_result == 0) {
         // 显示时域特征
         std::cout << "时域特征：\n";
-        std::cout << "均值: " << time_features[0] << "\n";
-        std::cout << "方差: " << time_features[1] << "\n";
-        std::cout << "标准差: " << time_features[2] << "\n";
-        std::cout << "偏度: " << time_features[3] << "\n";
-        std::cout << "峰度: " << time_features[4] << "\n";
+        std::cout << "均值: " << features.time_domain_features[0] << "\n";
+        std::cout << "方差: " << features.time_domain_features[1] << "\n";
+        std::cout << "标准差: " << features.time_domain_features[2] << "\n";
+        std::cout << "偏度: " << features.time_domain_features[3] << "\n";
+        std::cout << "峰度: " << features.time_domain_features[4] << "\n";
 
         // 显示频域特征
         std::cout << "\n频域特征：\n";
-        std::cout << "中心频率: " << freq_features[0] << " Hz\n";
-        std::cout << "主频: " << freq_features[1] << " Hz\n";
-        std::cout << "频带宽度: " << freq_features[2] << " Hz\n";
+        std::cout << "中心频率: " << features.freq_domain_features[0] << " Hz\n";
+        std::cout << "主频: " << features.freq_domain_features[1] << " Hz\n";
+        std::cout << "频带宽度: " << features.freq_domain_features[2] << " Hz\n";
+        
+        // 显示时频特征
+        std::cout << "\n时频特征：\n";
+        std::cout << "频谱质心变化率: " << features.time_freq_features[0] << "\n";
+        std::cout << "频谱熵: " << features.time_freq_features[1] << "\n";
+        std::cout << "频谱流量: " << features.time_freq_features[2] << "\n";
     }
 
     // 3. 线谱分析

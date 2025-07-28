@@ -6,6 +6,16 @@ void run_underwater_demo();
 void run_communication_demo();
 void run_signal_analysis_demo();
 
+// 演示函数声明
+void demonstrate_signal_generation();
+void demonstrate_spectrum_analysis();
+void demonstrate_matched_filter();
+void demonstrate_sound_propagation();
+
+// 新增功能演示函数声明
+void demonstrate_enhanced_features();
+void demonstrate_red_blue_scenario();
+
 int main() {
     std::cout << "水声信号处理库演示程序\n";
     std::cout << "========================\n\n";
@@ -38,6 +48,25 @@ int main() {
                 std::cout << "无效选项，请重新选择\n";
         }
     }
+
+    // 运行各种演示
+    demonstrate_signal_generation();
+    demonstrate_spectrum_analysis();
+    demonstrate_matched_filter();
+    demonstrate_sound_propagation();
+    
+    // === 新增功能演示 ===
+    printf("\n" + std::string(50, '=') + "\n");
+    printf("开始新增功能演示...\n");
+    printf(std::string(50, '=') + "\n");
+    
+    // 调用新增功能演示
+    demonstrate_enhanced_features();
+    demonstrate_red_blue_scenario();
+    
+    printf("\n" + std::string(50, '=') + "\n");
+    printf("所有演示完成!\n");
+    printf(std::string(50, '=') + "\n");
 
     return 0;
 } 
