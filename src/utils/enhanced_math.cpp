@@ -142,6 +142,7 @@ SIGNAL_LIB_API int eigen_lu_decomposition(const double* matrix, size_t rows, siz
         
         return 0;
     } catch (const std::exception& e) {
+        printf("Eigen LU decomposition error: %s\n", e.what());
         return -1;
     }
 }
@@ -181,6 +182,7 @@ SIGNAL_LIB_API int eigen_solve_linear_system(const double* A, const double* b, d
         
         return 0;
     } catch (const std::exception& e) {
+        printf("Eigen solve linear system error: %s\n", e.what());
         return -1;
     }
 }
@@ -232,6 +234,7 @@ SIGNAL_LIB_API int eigen_solve_complex_system(const Complex* A, const Complex* b
         
         return 0;
     } catch (const std::exception& e) {
+        printf("Eigen solve complex system error: %s\n", e.what());
         return -1;
     }
 }
@@ -287,6 +290,7 @@ SIGNAL_LIB_API int adaptive_integration(IntegrandFunction func, double a, double
         *result = simpson_adaptive(func, a, b, tolerance, params, 20);  // 最大递归深度20
         return 0;
     } catch (const std::exception& e) {
+        printf("Adaptive integration error: %s\n", e.what());
         return -1;
     }
 }
@@ -324,6 +328,7 @@ SIGNAL_LIB_API int eigen_eigenvalue_decomposition(const double* matrix, size_t n
         
         return 0;
     } catch (const std::exception& e) {
+        printf("Eigen eigenvalue decomposition error: %s\n", e.what());
         return -1;
     }
 }
@@ -482,6 +487,7 @@ SIGNAL_LIB_API int cubic_spline_interpolation(const double* x, const double* y, 
         
         return 0;
     } catch (const std::exception& e) {
+        printf("Cubic spline interpolation error: %s\n", e.what());
         return -1;
     }
 }
@@ -586,6 +592,7 @@ SIGNAL_LIB_API int stable_polynomial_roots(const double* coefficients, int degre
         
         return 0;
     } catch (const std::exception& e) {
+        printf("Stable polynomial roots error: %s\n", e.what());
         return -1;
     }
 } 

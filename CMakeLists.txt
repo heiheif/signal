@@ -58,29 +58,3 @@ set_target_properties(signal_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
 
-# 创建测试可执行文件
-#add_executable(test_all_interfaces test_all_interfaces.cpp)
-
-# 链接库
-# 先链接主库，再链接gtest/gmock
-# gtest/gmock是静态库，signal_lib是动态库
-# 这样test程序运行时依赖signal_lib.dll
-#
-# target_link_libraries(test_all_interfaces 
-#     signal_lib
-#     ${GTEST_LIBRARY}
-#     ${GTEST_MAIN_LIBRARY}
-#     ${GMOCK_LIBRARY}
-#     ${GMOCK_MAIN_LIBRARY}
-# )
-
-# # 启用测试
-# enable_testing()
-
-# 添加测试
-#add_test(NAME AllInterfacesTest COMMAND test_all_interfaces)
-
-# 设置测试环境变量
-#set_tests_properties(AllInterfacesTest PROPERTIES
-#    ENVIRONMENT "PATH=${CMAKE_BINARY_DIR}/bin;$ENV{PATH}"
-#) 
