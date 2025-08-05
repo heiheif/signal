@@ -72,7 +72,7 @@ SIGNAL_LIB_API double calculateTL(TLCalType cal_type, double R) {
     return TL;
 }
 
-SIGNAL_LIB_API double calculateTL(double TL_coefficient, double air_absorption_coefficient, double R) {
+SIGNAL_LIB_API double calculateTLByParam(double TL_coefficient, double air_absorption_coefficient, double R) {
     return TL_coefficient * log10(R) + air_absorption_coefficient * (R / 1000);
 }
 

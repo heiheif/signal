@@ -86,12 +86,14 @@ SIGNAL_LIB_API int spectrum_analysis(const Signal* sig, Complex* spectrum, size_
 // CW信号生成函数实现
 SIGNAL_LIB_API Signal* generate_cw(double freq, double fs, double duration, double amplitude, double phase) {
     if (freq <= 0 || fs <= 0 || duration <= 0) {
+        printf("generate_cw: freq <= 0 || fs <= 0 || duration <= 0\n");
         return NULL;
     }
 
     // 检查采样点数是否超过最大限制
     size_t length = (size_t)(fs * duration);
     if (length > MAX_SIGNAL_LENGTH) {
+        printf("generate_cw: length > MAX_SIGNAL_LENGTH\n");
         return NULL;
     }
 

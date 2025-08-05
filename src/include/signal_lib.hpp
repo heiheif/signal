@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <ctime>
 
 #include "signal_struct.hpp"
 
@@ -170,7 +171,7 @@ SIGNAL_LIB_API double calculateTL(TLCalType cal_type, double R);
  * @param R 距离，单位米
  * @return 传输损失(dB)
  */
-SIGNAL_LIB_API double calculateTL(double TL_coefficient, double air_absorption_coefficient, double R);
+SIGNAL_LIB_API double calculateTLByParam(double TL_coefficient, double air_absorption_coefficient, double R);
 
 
 /**
@@ -182,7 +183,266 @@ SIGNAL_LIB_API double calculateTL(double TL_coefficient, double air_absorption_c
  */
 SIGNAL_LIB_API double calculateDI(DIParams* params);
 
+
+
 // =================================== core interface ===================================
+
+// =================================== signal caculate interface ===================================
+
+#pragma region 信号对象管理
+// === 信号对象管理 ===
+/**
+ * @brief 创建信号对象
+ * @param length 信号长度
+ * @param fs 采样率(Hz)
+ * @return 成功返回Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* create_signal(size_t length, double fs);
+
+/**
+ * @brief 销毁信号对象，释放内存
+ * @param sig 要销毁的信号对象指针
+ */
+SIGNAL_LIB_API void destroy_signal(Signal* sig);
+
+#pragma endregion
+
+#pragma region 基础信号生成
+// === 基础信号生成 ===
+
+/**
+ * @brief 生成基本正弦信号
+ * @param freq 信号频率(Hz)
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @return 成功返回Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_basic_signal(double freq, double fs, double duration);
+
+/**
+ * @brief 生成连续波(CW)信号
+ * @param freq 载波频率(Hz)
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @param amplitude 信号幅度
+ * @param phase 初始相位(弧度)
+ * @return 成功返回Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_cw(double freq, double fs, double duration, double amplitude, double phase);
+
+/**
+ * @brief 生成线性调频(LFM)信号
+ * @param f_start 起始频率(Hz)
+ * @param f_end 终止频率(Hz)
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @return 成功返回Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_lfm(double f_start, double f_end, double fs, double duration);
+
+/**
+ * @brief 生成双曲调频(HFM)信号
+ * @param f_start 起始频率(Hz)
+ * @param f_end 终止频率(Hz)
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @return 成功返回Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_hfm(double f_start, double f_end, double fs, double duration);
+
+/**
+ * @brief 生成相位键控(PSK)信号
+ * @param carrier_freq 载波频率(Hz)
+ * @param fs 采样率(Hz)
+ * @param symbol_count 符号数量
+ * @param samples_per_symbol 每个符号的采样点数
+ * @param symbols 符号序列数组
+ * @return 成功返回相位编码信号，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_psk(double carrier_freq, double fs, int symbol_count, 
+                    int samples_per_symbol, const int* symbols);
+
+/**
+ * @brief 生成频率键控(FSK)信号
+ * @param freqs 频率数组
+ * @param freq_count 频率数量
+ * @param fs 采样率(Hz)
+ * @param symbol_count 符号数量
+ * @param samples_per_symbol 每个符号的采样点数
+ * @param symbols 符号序列数组
+ * @return 成功返回Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_fsk(double* freqs, int freq_count, double fs, 
+                    int symbol_count, int samples_per_symbol, const int* symbols);
+
+/**
+ * @brief 生成船舶辐射噪声信号
+ * @param motion_state 船舶运动状态参数
+ * @param fs 采样率(Hz)
+ * @param freq_min 最小频率(Hz)
+ * @param freq_max 最大频率(Hz)
+ * @param source_level_db 声源级(dB re 1μPa@1m)
+ * @return 成功返回船舶噪声信号，失败返回NULL
+ * @details 基于船舶类型、尺寸、速度等参数仿真辐射噪声谱特性
+ */
+SIGNAL_LIB_API Signal* generate_ship_noise(const ShipMotionState* motion_state,
+                                          double fs,
+                                          double freq_min,
+                                          double freq_max,
+                                          double source_level_db);
+
+/**
+ * @brief 生成OFDM(正交频分复用)信号
+ * @param params OFDM信号参数
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @return 成功返回OFDM信号，失败返回NULL
+ * @details 实现基本的OFDM调制，包括子载波映射、IFFT变换和循环前缀添加
+ */
+SIGNAL_LIB_API Signal* generate_ofdm(const OFDMParams* params, double fs, double duration);
+
+/**
+ * @brief 生成DSSS(直接序列扩频)信号
+ * @param params DSSS信号参数
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @return 成功返回DSSS信号，失败返回NULL
+ * @details 实现基本的直接序列扩频调制，包括数据调制和扩频码调制
+ */
+SIGNAL_LIB_API Signal* generate_dsss(const DSSSParams* params, double fs, double duration);
+
+/**
+ * @brief 生成组合信号(对应MATLAB的gen_signal01函数)
+ * @param signal_type 信号类型(对应MATLAB中的signal_kind)
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @param freq_min 最小频率(Hz)
+ * @param freq_max 最大频率(Hz)
+ * @return 成功返回组合信号，失败返回NULL
+ * @details 根据signal_type生成对应的组合信号，包括基本信号+空白+LFM等组合模式
+ */
+SIGNAL_LIB_API Signal* generate_composite_signal(CompositeSignalType signal_type,
+                                                double fs,
+                                                double duration,
+                                                double freq_min,
+                                                double freq_max);
+
+/**
+ * @brief 创建OFDM参数结构体
+ * @param carrier_freq 载波频率(Hz)
+ * @param bandwidth 信号带宽(Hz)
+ * @param num_subcarriers 子载波数量
+ * @param cp_ratio 循环前缀比例[0-1]
+ * @return 成功返回OFDMParams指针，失败返回NULL
+ */
+SIGNAL_LIB_API OFDMParams* create_ofdm_params(double carrier_freq, double bandwidth, 
+                                              int num_subcarriers, double cp_ratio);
+
+/**
+ * @brief 销毁OFDM参数结构体
+ * @param params 要销毁的OFDM参数指针
+ */
+SIGNAL_LIB_API void destroy_ofdm_params(OFDMParams* params);
+
+/**
+ * @brief 创建DSSS参数结构体
+ * @param carrier_freq 载波频率(Hz)
+ * @param bit_rate 比特率(bps)
+ * @param chip_rate 码片速率(cps)
+ * @param code_length 扩频码长度
+ * @return 成功返回DSSSParams指针，失败返回NULL
+ */
+SIGNAL_LIB_API DSSSParams* create_dsss_params(double carrier_freq, double bit_rate, 
+                                              double chip_rate, size_t code_length);
+
+/**
+ * @brief 销毁DSSS参数结构体  
+ * @param params 要销毁的DSSS参数指针
+ */
+SIGNAL_LIB_API void destroy_dsss_params(DSSSParams* params);
+
+/**
+ * @brief 生成伪随机序列(用于扩频码)
+ * @param sequence 输出序列数组
+ * @param length 序列长度
+ * @param seed 随机种子
+ * @return 成功返回0，失败返回-1
+ */
+SIGNAL_LIB_API int generate_pn_sequence(int* sequence, size_t length, unsigned int seed);
+
+/**
+ * @brief 在信号中添加空白间隔
+ * @param signal1 第一个信号
+ * @param signal2 第二个信号  
+ * @param gap_duration 间隔时间(s)
+ * @return 成功返回拼接后的信号，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* concatenate_signals_with_gap(const Signal* signal1, 
+                                                   const Signal* signal2,
+                                                   double gap_duration);
+
+/**
+ * @brief 对信号进行频谱分析
+ * @param sig 输入信号
+ * @param spectrum 输出频谱(复数形式)
+ * @param spec_length 输出频谱长度
+ * @return 成功返回0，失败返回-1
+ */
+SIGNAL_LIB_API int spectrum_analysis(const Signal* sig, Complex* spectrum, size_t* spec_length);
+
+/**
+ * @brief 匹配滤波器
+ * @param input 输入信号
+ * @param reference 参考信号
+ * @return 成功返回滤波后的Signal指针，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* matched_filter(const Signal* input, const Signal* reference);
+
+/**
+ * @brief 线谱分析
+ * @param sig 输入信号
+ * @param min_peak_height 最小峰值高度
+ * @param min_peak_distance 最小峰值间距
+ * @param result 分析结果
+ * @return 成功返回0，失败返回-1
+ */
+SIGNAL_LIB_API int analyze_line_spectrum(const Signal* sig, double min_peak_height,
+                         double min_peak_distance, LineSpectrum* result);
+
+/**
+ * @brief 提取信号特征
+ * @param sig 输入信号
+ * @param features 输出的信号特征结构体
+ * @return 成功返回0，失败返回-1
+ */
+SIGNAL_LIB_API int extract_features(const Signal* sig, SignalFeatures* features);
+
+/**
+ * @brief 计算信号功率
+ */
+SIGNAL_LIB_API double calculate_signal_power(const Signal* sig);
+
+/**
+ * @brief 添加AWGN噪声
+ * @param sig 输入信号
+ * @param targetSNRdB 目标信噪比(dB)
+ * @return 成功返回添加噪声后的信号，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* add_AWGN_noise(const Signal* sig, double targetSNRdB);
+
+
+/**
+ * @brief 生成一个随机的海面噪声
+ * @param fs 采样率(Hz)
+ * @param duration 信号持续时间(s)
+ * @return 成功返回海面噪声信号，失败返回NULL
+ */
+SIGNAL_LIB_API Signal* generate_sea_noise(double fs, double duration);
+
+#pragma endregion
+
+// =============== 信号计算相关代码 ==================//
+
 
 
 #pragma region 高级声场计算接口
@@ -510,234 +770,6 @@ SIGNAL_LIB_API Signal* generate_phase_coded_signal(const int* code_sequence,
                                                   double sampling_rate);
 #pragma endregion
 
-#pragma region 信号对象管理
-// === 信号对象管理 ===
-
-/**
- * @brief 创建信号对象
- * @param length 信号长度
- * @param fs 采样率(Hz)
- * @return 成功返回Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* create_signal(size_t length, double fs);
-
-/**
- * @brief 销毁信号对象，释放内存
- * @param sig 要销毁的信号对象指针
- */
-SIGNAL_LIB_API void destroy_signal(Signal* sig);
-#pragma endregion
-
-#pragma region 基础信号生成
-// === 基础信号生成 ===
-
-/**
- * @brief 生成基本正弦信号
- * @param freq 信号频率(Hz)
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @return 成功返回Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* generate_basic_signal(double freq, double fs, double duration);
-
-/**
- * @brief 生成连续波(CW)信号
- * @param freq 载波频率(Hz)
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @param amplitude 信号幅度
- * @param phase 初始相位(弧度)
- * @return 成功返回Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* generate_cw(double freq, double fs, double duration, double amplitude, double phase);
-
-/**
- * @brief 生成线性调频(LFM)信号
- * @param f_start 起始频率(Hz)
- * @param f_end 终止频率(Hz)
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @return 成功返回Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* generate_lfm(double f_start, double f_end, double fs, double duration);
-
-/**
- * @brief 生成双曲调频(HFM)信号
- * @param f_start 起始频率(Hz)
- * @param f_end 终止频率(Hz)
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @return 成功返回Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* generate_hfm(double f_start, double f_end, double fs, double duration);
-
-/**
- * @brief 生成相位键控(PSK)信号
- * @param carrier_freq 载波频率(Hz)
- * @param fs 采样率(Hz)
- * @param symbol_count 符号数量
- * @param samples_per_symbol 每个符号的采样点数
- * @param symbols 符号序列数组
- * @return 成功返回相位编码信号，失败返回NULL
- */
-SIGNAL_LIB_API Signal* generate_psk(double carrier_freq, double fs, int symbol_count, 
-                    int samples_per_symbol, const int* symbols);
-
-/**
- * @brief 生成频率键控(FSK)信号
- * @param freqs 频率数组
- * @param freq_count 频率数量
- * @param fs 采样率(Hz)
- * @param symbol_count 符号数量
- * @param samples_per_symbol 每个符号的采样点数
- * @param symbols 符号序列数组
- * @return 成功返回Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* generate_fsk(double* freqs, int freq_count, double fs, 
-                    int symbol_count, int samples_per_symbol, const int* symbols);
-
-/**
- * @brief 生成船舶辐射噪声信号
- * @param motion_state 船舶运动状态参数
- * @param fs 采样率(Hz)
- * @param freq_min 最小频率(Hz)
- * @param freq_max 最大频率(Hz)
- * @param source_level_db 声源级(dB re 1μPa@1m)
- * @return 成功返回船舶噪声信号，失败返回NULL
- * @details 基于船舶类型、尺寸、速度等参数仿真辐射噪声谱特性
- */
-SIGNAL_LIB_API Signal* generate_ship_noise(const ShipMotionState* motion_state,
-                                          double fs,
-                                          double freq_min,
-                                          double freq_max,
-                                          double source_level_db);
-
-/**
- * @brief 生成OFDM(正交频分复用)信号
- * @param params OFDM信号参数
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @return 成功返回OFDM信号，失败返回NULL
- * @details 实现基本的OFDM调制，包括子载波映射、IFFT变换和循环前缀添加
- */
-SIGNAL_LIB_API Signal* generate_ofdm(const OFDMParams* params, double fs, double duration);
-
-/**
- * @brief 生成DSSS(直接序列扩频)信号
- * @param params DSSS信号参数
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @return 成功返回DSSS信号，失败返回NULL
- * @details 实现基本的直接序列扩频调制，包括数据调制和扩频码调制
- */
-SIGNAL_LIB_API Signal* generate_dsss(const DSSSParams* params, double fs, double duration);
-
-/**
- * @brief 生成组合信号(对应MATLAB的gen_signal01函数)
- * @param signal_type 信号类型(对应MATLAB中的signal_kind)
- * @param fs 采样率(Hz)
- * @param duration 信号持续时间(s)
- * @param freq_min 最小频率(Hz)
- * @param freq_max 最大频率(Hz)
- * @return 成功返回组合信号，失败返回NULL
- * @details 根据signal_type生成对应的组合信号，包括基本信号+空白+LFM等组合模式
- */
-SIGNAL_LIB_API Signal* generate_composite_signal(CompositeSignalType signal_type,
-                                                double fs,
-                                                double duration,
-                                                double freq_min,
-                                                double freq_max);
-
-/**
- * @brief 创建OFDM参数结构体
- * @param carrier_freq 载波频率(Hz)
- * @param bandwidth 信号带宽(Hz)
- * @param num_subcarriers 子载波数量
- * @param cp_ratio 循环前缀比例[0-1]
- * @return 成功返回OFDMParams指针，失败返回NULL
- */
-SIGNAL_LIB_API OFDMParams* create_ofdm_params(double carrier_freq, double bandwidth, 
-                                              int num_subcarriers, double cp_ratio);
-
-/**
- * @brief 销毁OFDM参数结构体
- * @param params 要销毁的OFDM参数指针
- */
-SIGNAL_LIB_API void destroy_ofdm_params(OFDMParams* params);
-
-/**
- * @brief 创建DSSS参数结构体
- * @param carrier_freq 载波频率(Hz)
- * @param bit_rate 比特率(bps)
- * @param chip_rate 码片速率(cps)
- * @param code_length 扩频码长度
- * @return 成功返回DSSSParams指针，失败返回NULL
- */
-SIGNAL_LIB_API DSSSParams* create_dsss_params(double carrier_freq, double bit_rate, 
-                                              double chip_rate, size_t code_length);
-
-/**
- * @brief 销毁DSSS参数结构体  
- * @param params 要销毁的DSSS参数指针
- */
-SIGNAL_LIB_API void destroy_dsss_params(DSSSParams* params);
-
-/**
- * @brief 生成伪随机序列(用于扩频码)
- * @param sequence 输出序列数组
- * @param length 序列长度
- * @param seed 随机种子
- * @return 成功返回0，失败返回-1
- */
-SIGNAL_LIB_API int generate_pn_sequence(int* sequence, size_t length, unsigned int seed);
-
-/**
- * @brief 在信号中添加空白间隔
- * @param signal1 第一个信号
- * @param signal2 第二个信号  
- * @param gap_duration 间隔时间(s)
- * @return 成功返回拼接后的信号，失败返回NULL
- */
-SIGNAL_LIB_API Signal* concatenate_signals_with_gap(const Signal* signal1, 
-                                                   const Signal* signal2,
-                                                   double gap_duration);
-
-/**
- * @brief 对信号进行频谱分析
- * @param sig 输入信号
- * @param spectrum 输出频谱(复数形式)
- * @param spec_length 输出频谱长度
- * @return 成功返回0，失败返回-1
- */
-SIGNAL_LIB_API int spectrum_analysis(const Signal* sig, Complex* spectrum, size_t* spec_length);
-
-/**
- * @brief 匹配滤波器
- * @param input 输入信号
- * @param reference 参考信号
- * @return 成功返回滤波后的Signal指针，失败返回NULL
- */
-SIGNAL_LIB_API Signal* matched_filter(const Signal* input, const Signal* reference);
-
-/**
- * @brief 线谱分析
- * @param sig 输入信号
- * @param min_peak_height 最小峰值高度
- * @param min_peak_distance 最小峰值间距
- * @param result 分析结果
- * @return 成功返回0，失败返回-1
- */
-SIGNAL_LIB_API int analyze_line_spectrum(const Signal* sig, double min_peak_height,
-                         double min_peak_distance, LineSpectrum* result);
-
-/**
- * @brief 提取信号特征
- * @param sig 输入信号
- * @param features 输出的信号特征结构体
- * @return 成功返回0，失败返回-1
- */
-SIGNAL_LIB_API int extract_features(const Signal* sig, SignalFeatures* features);
-#pragma endregion
 
 #pragma region 声速剖面计算与管理
 // === 声速剖面计算与管理 ===
